@@ -20,6 +20,8 @@ RUN apk add --no-cache git g++ make libgcc libstdc++ sqlite-libs sqlite-dev zlib
 
 COPY ./tippecanoe /
 
+RUN crontab crontab.txt
+
 RUN chmod 755 /tilegen.sh /get_static_data.sh /docker-entrypoint.sh
 
 CMD './docker-entrypoint.sh'

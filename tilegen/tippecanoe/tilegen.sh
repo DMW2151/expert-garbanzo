@@ -5,7 +5,11 @@ mkdir -p /sources/agg/
 psql -h ${POSTGRES_HOST} \
     -U ${POSTGRES_USER} \
     -d ${POSTGRES_DB} \
-    -c """REFRESH MATERIALIZED VIEW event_log;"""
+    -c """
+    -- Huge Delete, Should trigger autovac daemon automatically; 
+    -- This table could get big, w. dead tuples...
+    REFRESH MATERIALIZED VIEW event_log;
+    """
 
 # Create an Aggregate View of The last N hours (see defn from event_log)
 rm -f /sources/agg/statistics.geojson  &&\
