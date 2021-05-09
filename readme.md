@@ -1,6 +1,6 @@
 # MQTT -> Redis
 
-This project uses Redis to publish live locations of vehicles in the Helsinki metro area. Data is sourced from the Helsinki Regional Transit Authority's public data feeds via MQTT. Messages are processed through a broker written in Golang and into Redis. 
+This project uses Redis to publish live locations of vehicles in the Helsinki metro area. Data is sourced from the Helsinki Regional Transit Authority's public data feeds via MQTT. Messages are processed through a broker written in Golang and into Redis.
 
 From Redis, the data is fanned out to a stream, a pub/sub channel, and multiple time series.
 
@@ -18,7 +18,7 @@ The remainder of this document will go through the local deployment of the appli
 
 ### Screenshot of Live Map - Downtown Helsinki
 
-![Live](./docs/live.png)
+![Live](./docs/live_.png)
 
 ### Screenshot of Live Map - Neighborhoods
 
@@ -106,7 +106,7 @@ pipe.XAdd(
 )
 ```
 
-Using the Redis CLI, this would be equivalent to 
+Using the Redis CLI, this would be equivalent to:
 
 ```bash
 127.0.0.1:6379>  XADD events * jid journeyhashID lat 60 lng 25 time 1620533624765 speed 10 acc 0.1 dl "00:00"
