@@ -1,4 +1,4 @@
-# MQTT -> Redis
+# Helsinki Transit System - Live Tracking w. Redis
 
 This project uses Redis to publish live locations of vehicles in the Helsinki metro area. Data is sourced from the Helsinki Regional Transit Authority's public data feeds via MQTT. Messages are processed through a broker written in Golang and into Redis.
 
