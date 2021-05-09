@@ -1,0 +1,5 @@
+psycopg2-binary==2.8.6
+click==7.1.2
+gears-cli==1.1.0
+redis==3.5.3
+numpy==1.20.2

@@ -1,0 +1,115 @@
+version: '3'
+
+services:
+  
+  ## Core Services
+
+  # Redis: dmw2151/redismods -> uses redislabs default container as base 
+  # See Image: https://hub.docker.com/r/redislabs/redismod
+  redis:
+    image: dmw2151/redismods 
+    build: ./redis
+    expose:
+      - 6379
+    ports: 
+      - "6379:6379"
+    env_file:
+      - ./envs/postgres.env
+    volumes:
+      - ./redis/:/redis/
+      - redis_data:/data/      
+    restart:
+      unless-stopped
+
+  # Mqtt Connector: Runs a Golang service which receives from a MQTT stream
+  # and pushes to a redis instance
+  mqtt:
+    image: dmw2151/mqtt_connector
+    build:
+      context: ./hslservices/
+      dockerfile: ./cmd/mqtt/Dockerfile
+    depends_on:
+      - "redis"
+    env_file:
+      - ./envs/mqtt_connector.env
+      - ./envs/redis.env
+    restart:
+      unless-stopped
+
+  # Postgis: Used for Writebehind of Statistics/EventLog -> 
+  postgis:
+    image: mdillon/postgis  
+    expose:
+      - 5432
+    ports: 
+      - "5433:5432"
+    env_file:
+      - ./envs/postgres.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # For persisting the database
+      - ./postgis/:/docker-entrypoint-initdb.d # For enabling scripts on init
+
+  # Frontend: Notes....
+  frontend:
+    image: dmw2151/hslolfrontend
+    build: ./frontend/
+    depends_on:
+      - "redis"
+      - "mqtt"
+      - "tiles_api"
+      - "locations_api"
+    ports: 
+        - "8080:1234"
+    env_file: 
+      - './envs/hslweb.env'
+    restart:
+      unless-stopped
+    
+  
+  # Tile Generation Sidecar; Should sit near to PostGIS as possible
+  tilegen:
+    image: dmw2151/tilegen
+    build: ./tilegen/
+    depends_on:
+      - "postgis"
+    volumes:
+      - ./tilegen/tiles/:/tiles
+    env_file:
+      - ./envs/postgres.env
+    restart: 
+      unless-stopped
+
+  # Spatial API:
+  tiles_api:
+    image: dmw2151/tiles_api
+    build:
+      context: ./hslservices/
+      dockerfile: ./cmd/tiles/Dockerfile
+    expose:
+      - 2151
+    ports: 
+      - "2151:2151"
+    volumes:
+      - ./tilegen/tiles/:/tiles/:ro
+    env_file:
+      - ./envs/layers_api.env
+
+  # Locations API:
+  locations_api:
+    image: dmw2151/locations_api
+    build:
+      context: ./hslservices/
+      dockerfile: ./cmd/locations/Dockerfile
+    expose:
+      - 2152
+    ports: 
+      - "2152:2152"
+    depends_on:
+      - "redis"
+    env_file:
+      - ./envs/redis.env
+    
+
+volumes: 
+  postgres_data:
+  redis_data:
