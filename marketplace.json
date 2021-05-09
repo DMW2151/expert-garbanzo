@@ -1,0 +1,26 @@
+{
+    "app_name": "Helsinki Transit Tracking",
+    "description": "Shows Realtime Tracking of Helsinki Transit Feeds",
+    "hidden": true, 
+    "rank": 2151,
+    "type": "Full App",
+    "contributed_by": "Community",
+    "repo_url": "https://github.com/DMW2151/expert-garbanzo",
+    "download_url": "",
+    "hosted_url": "https://maphub.dev/helsinki",
+    "quick_deploy": "false",
+    "deploy_buttons": [],
+    "language": ["Go", "Python"], 
+    "redis_commands": ["TS.ADD", "TS.CREATE", "PUBLISH", "SUBSCRIBE", "XADD", "SADD", "TS.CREATERULE", "TS.MRANGE"],
+    "redis_features": ["Pub/Sub", "Streams"],
+    "redis_modules": ["RedisTimeseries", "RedisGears"], 
+    "app_image_urls": [
+        "https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/Single.png",
+        "https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/arch.jpg",
+        "https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/live_.png"
+    ],
+    "youtube_url": " https://youtu.be/bjeUysXyzvs",
+    "special_tags": ["Hackathon"],
+    "verticals": [],
+    "markdown": "https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/readme.md"
+}
