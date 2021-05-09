@@ -18,15 +18,15 @@ The remainder of this document will go through the local deployment of the appli
 
 ### Screenshot of Live Map - Downtown Helsinki
 
-![Live](./docs/live_.png)
+![Live](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png)
 
 ### Screenshot of Live Map - Neighborhoods
 
-![Areas](./docs/areas.png)
+![Areas](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/areas.png)
 
 ### Screenshot of Live Map - History of Single Vehicle
 
-![Single](./docs/Single.png)
+![Single](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/Single.png)
 
 ------
 
@@ -49,7 +49,7 @@ docker exec redis_hackathon_redis_1 \
 
 ## Architecture Diagram
 
-![Arch](./docs/arch.jpg)
+![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg)
 
 ------
 
@@ -219,7 +219,7 @@ The `/locations/` endpoint subscribes/reads data from the PUB/SUB channel define
 The `/histlocations/` endpoint needs to gather data from multiple time series to create a combined response for the client, this means making a `TS.MRANGE` call. Because each **Timeseries B** is labelled with it's journey hash, the `TS.MRANGE` gathers the position and speed stats with a single call, filtering on journey hash.
 
 ```bash
-127.0.0.1:6379> TS.MRANGE  - + FILTER journey=<JOURNEYHASH>
+127.0.0.1:6379> TS.MRANGE - + FILTER journey=<JOURNEYHASH>
 ```
 
 The endpoint contains the business logic in golang to turn this into a nice JSON response body.
