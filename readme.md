@@ -47,13 +47,19 @@ docker exec redis_hackathon_redis_1 \
 
 ------
 
-## Architecture Diagram
+## Data Throughput
 
-![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg)
+The following charts display the rise in event-throughput on a Sunday Morning -> Afternoon, towards the middle of the day the events/minute top out at about 30,000 (~500/s) after growing steadily from under 1,000 events/minute early in the morning.
+
+![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_epm_iii.png)
+
+![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_per_min.png)
 
 ------
 
 ## System Architecture
+
+![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg)
 
 ### MQTT Broker
 
