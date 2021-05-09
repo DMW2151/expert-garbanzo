@@ -202,7 +202,7 @@ func (lh *LocationsAPIHandler) historicallocationsHandler(w http.ResponseWriter,
 
 	// TS.MRANGE uses a 5x nested structure for anything, wooof
 	result, err := lh.client.Do(
-		lh.client.Context(), "TS.MRANGE", "-", "+", "FILTER", fmt.Sprintf("journey=%s", journeyID), // "gh=1"
+		lh.client.Context(), "TS.MRANGE", "-", "+", "FILTER", fmt.Sprintf("journey=%s", journeyID),
 	).Result()
 
 	if err != nil {

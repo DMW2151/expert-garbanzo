@@ -139,7 +139,6 @@ func writeRedis(ctx context.Context, C <-chan []byte, client *redis.Client) {
 
 			createTimeSeriesPair(client, journeyID, "speed")
 			createTimeSeriesPair(client, journeyID, "gh")
-			createTimeSeriesPair(client, journeyID, "delta")
 		}
 
 		// Write The incoming event to multiple locations using
