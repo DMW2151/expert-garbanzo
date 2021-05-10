@@ -60,12 +60,13 @@ services:
       - "locations_api"
     ports: 
         - "8080:1234"
+    volumes:
+      - ./compiledjs:/hslolfrontend/dist
     env_file: 
       - './envs/hslweb.env'
     restart:
       unless-stopped
-    
-  
+
   # Tile Generation Sidecar; Should sit near to PostGIS as possible
   tilegen:
     image: dmw2151/tilegen

@@ -9,6 +9,10 @@ RUN cd /hslolfrontend &&\
     npm install --save-dev parcel-bundler &&\
     npm run build
 
+RUN apk update && \
+    apk add mailcap && \
+    rm /var/cache/apk/*
+
 WORKDIR ./hslolfrontend/dist
 
 ENTRYPOINT ["/usr/local/bin/npm", "start"]
