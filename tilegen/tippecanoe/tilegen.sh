@@ -8,6 +8,7 @@ psql -h ${POSTGRES_HOST} \
     -c """
     -- Huge Delete, Should trigger autovac daemon automatically; 
     -- This table could get big, w. dead tuples...
+    
     DELETE FROM statistics.events 
     where approx_event_time < now() at time zone 'utc' - interval'2 hours';
 

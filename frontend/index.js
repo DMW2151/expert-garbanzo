@@ -17,7 +17,7 @@ import {ScaleLine, defaults as defaultControls} from 'ol/control';
 
 // Array
 // #d3f2a3,#97e196,#6cc08b,#4c9b82,#217a79,#105965,#074050
-var colorArray = ['#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d']
+var colorArray = ['#fff7b7', '#ffeea3', '#ffe58f', '#fedb7b', '#fecb67', '#feb953', '#fea747', '#fd9640', '#fd7e38', '#fc612f', '#f84528', '#ec2c21', '#df171d', '#cd0b22', '#b90026', '#9d0026']
 var api_host = process.env.API_HOST;
 
 // Mappings; map the raw labels to labels and statistics 
@@ -92,7 +92,6 @@ var mappings = {
   }
 }
 
-
 var histmappings = {
   "veh": {
     "label": "Vehicle ID",
@@ -138,13 +137,20 @@ var customStyleFunction = function(feature) {
 };
 
 
-
 // Static Background Layer - Stops, Sourced from static GTFS feed data
 var customStyleFunctionAreasSpeed = function(feature) {
 
   // Add Speed Here ...
   var p = feature.getProperties()
-  var colorIndex = Math.round((p.spd/16) * colorArray.length)
+  var colorIndex = Math.round(((p.spd - 3)/16) * colorArray.length)
+
+  if (colorIndex > colorArray.length){
+    colorIndex = colorArray.length
+  } 
+  
+  if (colorIndex <= 0) {
+    colorIndex = 1;
+  }
   
   return [new Style({
     stroke: new Stroke({
@@ -288,7 +294,9 @@ function eventMsgHandler(event) {
     // Create a UniqueID for each Bus, Train, etc based on Vehicle ID and route
     // some duplicate Vehicle IDs in fleet, not sure why, concat w. route resolves
     // this...
-    var loc = objSource.getFeatureById([obj.VP.route, obj.VP.veh].join("/"));
+    var loc = objSource.getFeatureById(
+      [obj.VP.route, obj.VP.veh].join("/")
+    );
     
     // If The point is already seen, then move the point to the new location...
     if (loc) {
@@ -304,7 +312,7 @@ function eventMsgHandler(event) {
     var loc = new Feature({
       geometry: new Point(
         transform([obj.VP.long, obj.VP.lat], 'EPSG:4326', 'EPSG:3857')
-        )
+      )
     });
 
     loc.setId([obj.VP.route, obj.VP.veh].join("/"))
@@ -321,7 +329,6 @@ document.getElementById("live-toggle").addEventListener("click", function() {
   
   var state = livePositionsLayer.getVisible()
   
-  
   if (state){
     window.ws.close(); window.ws = null;
     livePositionsLayer.setVisible(false);
@@ -329,8 +336,8 @@ document.getElementById("live-toggle").addEventListener("click", function() {
   } 
 
   // Think this works...check w. on which browsers...
-  livePositionsLayer.setVisible(true);
   window.ws = new WebSocket("wss://" + api_host + "/live/locations/");
+  livePositionsLayer.setVisible(true);
   window.ws.onmessage = eventMsgHandler
 });
 
@@ -437,7 +444,7 @@ map.on('pointermove', function(event) {
     }
   }, 
   {
-    hitTolerance: 2
+    hitTolerance: 3
   });
 });
 

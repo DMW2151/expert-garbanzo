@@ -103,9 +103,9 @@ func (ull *upgradedLocationListener) recv(idx int, callbackCh chan int) error {
 
 		if err := ull.c.WriteMessage(1, msg); err != nil {
 
+			// If the connection drops; remove the conn by sending the index of the channel
+			// to the remove connection handler...
 			if errors.Is(err, syscall.EPIPE) {
-				// If the connection drops; remove the conn by sending the index of the channel
-				// to the remove connection handler...
 				log.Infof("Sending Unregister %d", idx)
 				callbackCh <- idx
 				return err
