@@ -41,6 +41,7 @@ docker-compose up --build
 The following command should be run if you're interested in receiving periodic updates to the traffic speeds/neighborhoods layer. This command allows for the periodic updates of the Neighborhood layers, this is recommended, but is not strictly necessary.
 
 ```bash
+# redis_hackathon_redis_1
 docker exec redis_hackathon_redis_1 \
     bash -c "gears-cli run /redis/stream_writebehind.py --requirements /redis/requirements.txt"
 ```

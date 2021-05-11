@@ -139,6 +139,10 @@ func (lh *LocationsAPIHandler) subscriptionFanout() {
 
 	for msg := range channel {
 		// cast msg -> msgB and then send to all listening connections...
+		if len(lh.conns) == 0 {
+			continue // Save some $$$/CPU
+		}
+
 		msgB := []byte(msg.Payload)
 
 		for i, sub := range lh.conns {
