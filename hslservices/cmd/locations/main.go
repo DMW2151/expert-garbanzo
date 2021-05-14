@@ -243,10 +243,12 @@ func (lh *LocationsAPIHandler) historicallocationsHandler(w http.ResponseWriter,
 
 				lat, lng := geohash.DecodeIntWithPrecision(uint64(ghI), 64)
 
-				respArr[i] = hsl.Event{
-					Lat:       lat,
-					Lng:       lng,
-					Timestamp: ts,
+				if i > 240 { // Ensure no Fail if len > 240
+					respArr[i] = hsl.Event{
+						Lat:       lat,
+						Lng:       lng,
+						Timestamp: ts,
+					}
 				}
 			}
 		}
@@ -260,9 +262,7 @@ func (lh *LocationsAPIHandler) historicallocationsHandler(w http.ResponseWriter,
 					log.Error(err)
 				}
 
-				var s32 = float32(spdf)
-				respArr[i].Spd = s32
-
+				respArr[i].Spd = float32(spdf)
 			}
 		}
 	}
