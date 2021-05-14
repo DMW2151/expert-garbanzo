@@ -49,19 +49,18 @@ docker exec <name of redis container> \ # (e.g. redis_hackathon_redis_1)
 
 This system is not explicitly architected to handle huge amounts of data, but it does perform acceptably given this (relatively small scale) task.
 
-The following charts display the rise in event throughput on a Sunday morning into afternoon and evening. Notice that towards the middle of the day the events/minute top out at about 30,000 (~500/s) after growing steadily from under 1,000 events/minute early in the morning.
+The following charts display the rise in event throughput on a Sunday morning into afternoon and evening. Notice that towards the middle of the day the events/second top out at 500/s (30k events/min shown on graph) after growing steadily from < 10 events/s (1k events/minute) early in the morning.
 
 ![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_epm_iii.png)
 
 ![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_per_min.png)
 
-Alternatively, on a weekday morning at 8:00am, we can see the system handling ~1600+ events/s relatively
-comfortably. Consider the following stats from a five minute window the morning of 5/14/2021. Note the query below uses UTC time.
+Alternatively, on a weekday morning at 8:00am, we can see the system handling ~1600+ events/s relatively comfortably. Consider the following stats from a five minute window the morning of 5/14/2021. Note the query below uses UTC time.
 
 ```sql
 select
     now(),
-    count(1)/300 as eps
+    count(1)/300 as eps -- averaged over prev 300s
 from statistics.events
 where approx_event_time > now() - interval'5 minute';
 ```
@@ -118,7 +117,7 @@ Using a standard Redis client, this is the same as:
 
 #### Stream
 
-The incoming event is pushed to a stream. This stream is later processed by code that runs via Redis Gears. As with the PUB/SUB channel, this is written using the Redis Go Client shown below.
+The incoming event is pushed to a stream. This stream is later cleared and processed by code that runs via Redis Gears. As with the PUB/SUB channel, this is written using the Redis Go Client shown below.
 
 ```golang
 pipe.XAdd(
