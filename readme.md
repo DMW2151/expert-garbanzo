@@ -1,36 +1,34 @@
 # Helsinki Transit System - Live Tracking w. Redis
 
-This project uses Redis to publish live locations of vehicles in the Helsinki metro area. Data is sourced from the Helsinki Regional Transit Authority's public data feeds via MQTT. Messages are processed through a broker written in Golang and into Redis. All components of the app are hosted on single AWS `t2.medium` and is running live at https://maphub.dev/helsinki
+This project uses Redis to publish live locations of vehicles in the Helsinki metro area to a Web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public<sup>1</sup>. All components of the app are hosted on single AWS `t3.medium` and is running live at https://maphub.dev/helsinki
 
-From Redis, the data is fanned out to a stream, a pub/sub channel, and multiple time series.
+## Summary
 
-The stream data is occasionally marshalled into PostgreSQL using a Redis Gears function. This data is re-processed hourly and used to generate MapBox tiles that indicate relative traffic levels displayed on the front-end.
+Data is sourced from the Helsinki Regional Transit Authority's public data feeds via MQTT. Incoming MQTT messages are processed through a custom MQTT to Redis broker.
 
-The pub/sub channel is consumed by a Golang API which pushes messages along to each connected client via websocket. This allows for live updates of positions in the browser.
+Once in Redis, the data is fanned out to a stream, a pub/sub channel, and multiple time series.
 
-The time series data is split into a series for position and speed for each "trip", compacted into standardized series every 15s, and then served to the frontend by a Golang API.
+1. A Redis Gears function processes the data from the stream and writes it to persistent storage (PostgreSQL). Once in PostgreSQL, this data is processed hourly and used to generate MapBox tiles that indicate relative traffic levels throughout the metro.
 
-The remainder of this document will go through the local deployment of the application in a bit more detail.
+2. A Golang API subscribes to the pub/sub channel and pushes messages along to each connected client via websocket. This allows for live updates of positions in the browser.
+
+3. Time series data is split into separate series for for position (geohash, represented as int) and speed for each "trip". These series have a compaction rule on them and push to an aggregated series every 15s. These aggregated series are then served to the frontend by a Golang API which allows the user to access a trip's history.
+
+The remainder of this document will go through the application in a bit more detail, including local deployment of the application, traffic, system architecture, etc.
 
 ------
 
 ## Images
 
-### Screenshot of Live Map - Downtown Helsinki
+![Screenshot of Live Map - Downtown Helsinki](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png)
 
-![Live](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png)
+![Screenshot of Live Map - Neighborhoods](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/areas.png)
 
-### Screenshot of Live Map - Neighborhoods
-
-![Areas](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/areas.png)
-
-### Screenshot of Live Map - History of Single Vehicle
-
-![Single](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/Single.png)
+![Screenshot of Live Map - History of Single Vehicle](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/Single.png)
 
 ------
 
-## Startup Notes
+## Local Build - Startup Notes
 
 A functional version of the system can be spun up locally with `docker-compose up --build`. This will spin up (almost) all services required to run a local demo.
 
@@ -38,10 +36,10 @@ A functional version of the system can be spun up locally with `docker-compose u
 docker-compose up --build
 ```
 
-The following command should be run if you're interested in receiving periodic updates to the traffic speeds/neighborhoods layer. This command allows for the periodic updates of the Neighborhood layers, this is recommended, but is not strictly necessary.
+The following command should be run if you're interested in receiving periodic updates to the traffic speeds/neighborhoods layer. This command allows for the periodic updates of the neighborhood layers. This is recommended if for no other reason than it conserves memory by clearing the event stream to disk (PostgreSQL container). But is not strictly necessary as it can take several hours to gather sufficient data to get a reasonable amount of data (and you'd still need to wait to the `tilegen` job to come around!).
 
 ```bash
-docker exec redis_hackathon_redis_1 \
+docker exec <name of redis container> \ # (e.g. redis_hackathon_redis_1)
     bash -c "gears-cli run /redis/stream_writebehind.py --requirements /redis/requirements.txt"
 ```
 
@@ -49,11 +47,38 @@ docker exec redis_hackathon_redis_1 \
 
 ## Data Throughput
 
-The following charts display the rise in event-throughput on a Sunday Morning -> Afternoon, towards the middle of the day the events/minute top out at about 30,000 (~500/s) after growing steadily from under 1,000 events/minute early in the morning.
+This system is not explicitly architected to handle huge amounts of data, but it does perform acceptably given this (relatively small scale) task.
+
+The following charts display the rise in event throughput on a Sunday morning into afternoon and evening. Notice that towards the middle of the day the events/minute top out at about 30,000 (~500/s) after growing steadily from under 1,000 events/minute early in the morning.
 
 ![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_epm_iii.png)
 
 ![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_per_min.png)
+
+Alternatively, on a weekday morning at 8:00am, we can see the system handling ~1600+ events/s relatively
+comfortably. Consider the following stats from a five minute window the morning of 5/14/2021. Note the query below uses UTC time.
+
+```sql
+select
+    now(),
+    count(1)/300 as eps
+from statistics.events
+where approx_event_time > now() - interval'5 minute';
+```
+
+```bash
+              now              | eps
+-------------------------------+------
+ 2021-05-14 05:06:28.974982+00 | 1646
+```
+
+```bash
+CONTAINER ID   NAME                     CPU %     MEM USAGE / LIMIT     MEM %     NET I/O
+6d0a1d7fab0d   redis_hackathon_mqtt_1   24.02%    10.71MiB / 3.786GiB   0.28%     32GB / 60.4GB  
+833aab4d39a8   redis_hackathon_redis_1  7.02%     862.7MiB / 3.786GiB   22.26%    58.8GB / 38.9GB
+```
+
+Note that in the above, the uptime for the containers was around 36 hours, anecdotally, the system processes ~15-20GB of messages per day when subscribed to all messages in the system.
 
 ------
 
@@ -63,13 +88,13 @@ The following charts display the rise in event-throughput on a Sunday Morning ->
 
 ### MQTT Broker
 
-The MQTT broker is a Golang service that subscribes to a MQTT feed provided by the Helsinki Transit Authority and pushes message data to Redis. More about the real time positioning data from the HSL Metro can be found [here](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/).
+The MQTT broker is a Golang service that subscribes to a MQTT feed provided by the Helsinki Transit Authority. This service pushes message data to Redis after processing the message using some custom logic. More about the real-time positioning data from the HSL Metro can be found [here](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/).
 
 The broker is responsible for writing an incoming message from the MQTT feed to each of the following locations:
 
 #### PubSub Channel
 
-The incoming event is pushed to a pub/sub channel in Redis. This service uses Golang as a redis client and uses the command below:
+The incoming event is pushed to a pub/sub channel in Redis. This component (the mqtt broker) uses Golang as a Redis client and uses the command below:
 
 ```golang
 pipe := client.TxPipeline()
@@ -237,3 +262,6 @@ The frontend uses [OpenLayers](https://openlayers.org/), a JS library, to create
 - The GTFS Layer comes from the Tiles API
 - The Live Layer comes from the Locations API
 - The base map images come from calling a publicly available [Carto API](https://carto.com/help/building-maps/basemap-list/)
+
+
+<sup>1</sup> I am not a resident of Helsinki, my knowledge of the transit authority's product offerings is limited by both a lack of familiarity with the city and the Finnish language. 
