@@ -4,7 +4,6 @@ This project publishes realtime locations of municipal transport vehicles in the
 
 All components of the app are hosted on single AWS `t3.medium` with a `gp3` EBS volume and is running live at https://maphub.dev/helsinki
 
-_______
 
 ![Screenshot of Live Map - Downtown Helsinki](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png)
 
@@ -18,6 +17,26 @@ UI with the **current traffic** layer enabled - an hourly summary is aggregated 
 
 UI with the **trip history** layer and tooltip showing details of vehicle's current status. Coloring maps to vehicle's contemporaneous speed.
 
+-------
+
+- [Helsinki Transit System - Live Tracking w. Redis](#Helsinki-Transit-System---Live-Tracking-w-Redis)
+  - [Summary](#Summary)
+  - [Local Build - Startup Notes](#Local-Build---Startup-Notes)
+  - [System Architecture](#System-Architecture)
+    - [Ingesting Data w. MQTT to Redis Broker](#Ingesting-Data-w-MQTT-to-Redis-Broker)
+      - [Writing Data to PubSub Channel](#Writing-Data-to-PubSub-Channel)
+      - [Writing Data to Event Stream](#Writing-Data-to-Event-Stream)
+      - [Writing Data to TimeSeries](#Writing-Data-to-TimeSeries)
+        - [Commands](#Commands)
+    - [Redis Gears](#Redis-Gears)
+    - [Tile Generation Pipeline (PostGIS)](#Tile-Generation-Pipeline-PostGIS)
+    - [Accessing Data with the Locations API](#Accessing-Data-with-the-Locations-API)
+      - [Commands](#Commands-1)
+    - [Frontend](#Frontend)
+  - [Technical Appendix](#Technical-Appendix)
+    - [Data Throughput](#Data-Throughput)
+    - [CPU and Disk Usage](#CPU-and-Disk-Usage)
+  
 _______
 
 ## Summary
@@ -28,7 +47,7 @@ MQTT messages are delivered in 2 parts, message topic and message body. Consider
 
 ```bash
 # Topic - Delivered as Msg Part 1
-/hfp/v2/journey/ongoing/vp/bus/0018/00423/2159/2/Matinkylä (M)/09:32/2442201/3/60;24/16/58/67 
+/hfp/v2/journey/ongoing/vp/bus/0018/00423/2159/2/Matinkylä (M)/09:32/2442201/3/60;24/16/58/67
 
 # Body - Delivered as Msg Part 2
 {
@@ -92,11 +111,11 @@ docker exec <name of redis container> \ # (e.g. redis_hackathon_redis_1)
 
 ![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg)
 
-### MQTT Broker
+### Ingesting Data w. MQTT to Redis Broker
 
 The MQTT broker is a Golang service that subscribes to a MQTT feed provided by the Helsinki Transit Authority. This service pushes MQTT message data to Redis after processing the message. More about the real-time positioning data from the HSL Metro can be found [here](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/). The broker is responsible for writing an incoming message from the MQTT feed to each of the following locations:
 
-#### PubSub Channel
+#### Writing Data to PubSub Channel
 
 The incoming event is published to a PUB/SUB channel in Redis. This component (the mqtt broker) uses Golang as a Redis client and uses the code/command below.
 
@@ -120,7 +139,7 @@ pipe.Publish(
 127.0.0.1:6379>  PUBLISH currentLocationsPS '{"acc": 0.1, "speed": 10.6, "route": "foo"}'
 ```
 
-#### Stream
+#### Writing Data to Event Stream
 
 The incoming event is pushed to a stream. This stream is later cleared and processed by code that runs via [Redis Gears](./redis/stream_writebehind.py). As with the PUB/SUB channel, this is written using the Redis Go Client shown below.
 
@@ -147,7 +166,7 @@ pipe.XAdd(
 127.0.0.1:6379>  XADD events * jid journeyhashID lat 60 lng 25 time 1620533624765 speed 10 acc 0.1 dl "00:00"
 ```
 
-#### TimeSeries
+#### Writing Data to TimeSeries
 
 The incoming event is pushed to several time series. A unique identifier is created for each "trip" (referred to as **JourneyHash**) hashing certain attributes from the event. The broker creates a time series for both speed and location for each journeyhash. 
 
@@ -157,7 +176,7 @@ The incoming event is pushed to several time series. A unique identifier is crea
 
 The position and speed series have a short retention and are compacted to secondary time series. These compacted series have a much longer retention time (~2hr) and are used by the API to show users the **trip history** layer. By quickly expiring/aggregating individual events, this pattern allows us to keep memory usage much lower.
 
-##### TimeSeries Commands
+##### Commands
 
 As with previous sections, the commands are executed by Golang. As the standard Golang client does not include the `TS.XXX` commands, I will forgo showing the Go written for this section. 
 
@@ -197,15 +216,15 @@ To add data to **Time Series A** I use the following:
 
 In the example above, `123456123456163` is a fake number which represents a integer encoding of a geohash coordinate to integer encoding was handled in Go with [this](https://pkg.go.dev/github.com/mmcloughlin/geohash@v0.10.0) package.
 
-### Redis
+### Redis Gears
 
-I use a Docker image that is almost identical to `redislabs/redismod:latest` (see: [Dockerfile](/redis/Dockerfile)) as the base image for this project. The only significant difference is that this container contains a RedisGears function which implements a write-behind pattern. 
+I use a Docker image that is almost identical to `redislabs/redismod:latest` (see: [Dockerfile](/redis/Dockerfile)) as the base image for this project. The only significant difference is that this container contains a RedisGears function which implements a write-behind pattern.
 
 This function consumes from a stream and writes data to PostgreSQL/PostGIS every 5s/10,000 events. Even though Gears runs off the main thread, this function is designed to do minimal data-processing. This function simply dumps MQTT event data into PostGIS and allows the PostGIS and `Tilegen` processes to transform these events to MBtiles.
 
 The RedisGears function is written in Python and doesn't call any Redis commands; See [function](/redis/stream_writebehind.py).
 
-### PostGIS/Tilegen/ Tiles API
+### Tile Generation Pipeline (PostGIS)
 
 The `PostGIS` and `Tilegen` containers are crucial in serving **GTFS** and  **current traffic** layers.
 
@@ -218,7 +237,7 @@ TileGen is an alpine container that contains two common utilities used in geospa
 
 The TilesAPI is a  simple Golang API which is used to fetch those tiles from disk and send them to the frontend.
 
-### Locations API
+### Accessing Data with the Locations API
 
 The Locations API has two endpoints `/locations/` and `/histlocations/`.
 
@@ -226,7 +245,7 @@ The Locations API has two endpoints `/locations/` and `/histlocations/`.
   
 - `/histlocations/` queries a specific trip timeseries in Redis using `TS.MRANGE`; the API takes the "merged" result and creates a response of historical positions and speeds for a given trip.
 
-#### Locations API Commands
+#### Commands
 
 The `/locations/` endpoint subscribes/reads data from the PUB/SUB channel defined in the MQTT broker section. While written in Go, the redis-cli command for this would be:
 
