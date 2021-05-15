@@ -1,9 +1,8 @@
-# Helsinki Transit System - Live Tracking w. Redis
+# Helsinki Transit System - Real-Time Vehicle Tracking with Redis
 
-This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>
+This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>. 
 
-All components of the app are hosted on single AWS `t3.medium` with a `gp3` EBS volume and is running live at https://maphub.dev/helsinki
-
+This is an awesome service that Helsinki provides. Given that it publishes on the order of ~40 million updates per day, I felt that Redis would be a great tool to integrate into data processing and data serving for this project. A live version of this project is running at https://maphub.dev/helsinki
 
 ![Screenshot of Live Map - Downtown Helsinki](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png)
 
@@ -19,7 +18,7 @@ UI with the **trip history** layer and tooltip showing details of vehicle's curr
 
 -------
 
-- [Helsinki Transit System - Live Tracking w. Redis](#Helsinki-Transit-System---Live-Tracking-w-Redis)
+- [Helsinki Transit System - Real-Time Vehicle Tracking with Redis](#Helsinki-Transit-System---Real-Time-Vehicle-Tracking-with-Redis)
   - [Summary](#Summary)
   - [Local Build - Startup Notes](#Local-Build---Startup-Notes)
   - [System Architecture](#System-Architecture)
@@ -108,6 +107,8 @@ docker exec <name of redis container> \ # (e.g. redis_hackathon_redis_1)
 ------
 
 ## System Architecture
+
+All components of the app are hosted on single AWS `t3.medium` with a `gp3` EBS volume. In retrospect, while the `t3.medium` is appealing because of burstable CPU, a smaller instance could handle the application in it's current state.
 
 ![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg)
 
@@ -320,8 +321,8 @@ Prior to upgrade, system load was very high due to the write-behind from gears. 
 # Back to High Idle % --
 20:01:47        all      7.19      4.39      5.89   81.24
 ```
+
 ------
 
 <sup>1</sup> I am not a resident of Helsinki, my knowledge of the transit authority's product offerings is limited by both a lack of familiarity with the city and the Finnish language. 
-
 
