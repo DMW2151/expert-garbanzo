@@ -2,7 +2,7 @@
 
 This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>
 
-This is an awesome service that Helsinki provides. Given that it publishes on the order of ~40 million updates per day, I felt that Redis would be a great tool to integrate into data processing and data serving for this project. A live version of this project is running online at [https://Maphub.dev/helsinki](https://maphub.dev/helsinki)
+This is an awesome service that Helsinki provides. Given that it publishes on the order of ~40 million updates per day, I felt that Redis would be a great tool to integrate into data processing and data serving for this project. A live version of this project is running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
 
 ![Screenshot of Live Map - Downtown Helsinki](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png "live")
 
