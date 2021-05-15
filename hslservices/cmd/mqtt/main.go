@@ -158,6 +158,7 @@ func writeRedis(ctx context.Context, C <-chan []byte, client *redis.Client) {
 			ctx, &redis.XAddArgs{
 				Stream: "events",
 				Values: []interface{}{
+					"rt", e.VP.RouteID,
 					"jid", journeyID,
 					"lat", e.VP.Lat,
 					"lng", e.VP.Lng,
