@@ -4,15 +4,15 @@ This project publishes realtime locations of municipal transport vehicles in the
 
 This is an awesome service that Helsinki provides. Given that it publishes on the order of ~40 million updates per day, I felt that Redis would be a great tool to integrate into data processing and data serving for this project. A live version of this project is running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
 
-![Screenshot of Live Map - Downtown Helsinki](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/live_.png "live")
+![Screenshot of Live Map - Downtown Helsinki](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/live_.png "live")
 
 UI with **GTFS** (black) and **live-location** (blue) layers enabled.
 
-![Screenshot of Live Map - Neighborhoods](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/areas.png "areas")
+![Screenshot of Live Map - Neighborhoods](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/areas.png "areas")
 
 UI with the **current traffic** layer enabled - an hourly summary is aggregated to the neighborhood level and then colored based on vehicle speed in the area.
 
-![Screenshot of Live Map - History of Single Vehicle](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/Single.png "single")
+![Screenshot of Live Map - History of Single Vehicle](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/Single.png "single")
 
 UI with the **trip history** layer and tooltip showing details of vehicle's current status. Coloring maps to vehicle's contemporaneous speed.
 
@@ -110,7 +110,7 @@ docker exec <name of redis container> \ # (e.g. redis_hackathon_redis_1)
 
 All components of the app are hosted on single AWS `t3.medium` with a `gp3` EBS volume. In retrospect, while the `t3.medium` is appealing because of burstable CPU, a smaller instance could handle the application in it's current state.
 
-![Arch](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/arch.jpg "arch")
+![Arch](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/arch.jpg "arch")
 
 ### Ingesting Data w. MQTT to Redis Broker
 
@@ -276,9 +276,9 @@ This system is not explicitly architected to handle huge amounts of data, but it
 
 The following charts display the rise in event throughput on a Sunday morning into afternoon and evening. Notice that towards the middle of the day the events/second top out at 500/s (30k events/min shown on graph) after growing steadily from < 10 events/s (1k events/minute) early in the morning.
 
-![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_epm_iii.png)
+![Events](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/events_epm_iii.png "epm")
 
-![Events](https://github.com/DMW2151/expert-garbanzo/blob/master/docs/events_per_min.png)
+![Events](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/events_per_min.png "epm")
 
 Alternatively, on a weekday morning at 8:00am, we can see the system handling ~1600+ events/s relatively comfortably. Consider the following stats from a five minute window the morning of 5/14/2021.
 
