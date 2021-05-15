@@ -1,6 +1,6 @@
 # Helsinki Transit System - Live Tracking w. Redis
 
-This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a Web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>
+This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>
 
 All components of the app are hosted on single AWS `t3.medium` with a `gp3` EBS volume and is running live at https://maphub.dev/helsinki
 
