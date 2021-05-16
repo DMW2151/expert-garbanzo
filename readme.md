@@ -2,7 +2,9 @@
 
 This project publishes realtime locations of municipal transport vehicles in the Helsinki metro area to a web UI. Although Helsinki offers a great [realtime API](https://digitransit.fi/en/developers/apis/4-realtime-api/vehicle-positions/) for developers, there is no such site that makes this data generally available to the public.<sup>1</sup>
 
-This is an awesome service that Helsinki provides. Given that it publishes on the order of ~40 million updates per day, I felt that Redis would be a great tool to integrate into data processing and data serving for this project. A live version of this project is running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
+This is an awesome service that Helsinki provides. Given that HSL publishes on the order of ~50 million updates per day, I felt that Redis would be a great tool to use given the robustness of the TimeSeries Module to quickly aggregate tens of thousands of datapoints, and the Redis Gears module's ability to run batch jobs off the main thread.
+
+A live version of this project is running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
 
 ![Screenshot of Live Map - Downtown Helsinki](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/live_.png "live")
 
@@ -34,7 +36,7 @@ UI with the **trip history** layer and tooltip showing details of vehicle's curr
     - [Frontend](#Frontend)
   - [Technical Appendix](#Technical-Appendix)
     - [Data Throughput](#Data-Throughput)
-    - [CPU and Disk Usage](#CPU-and-Disk-Usage)
+    - [Memory, CPU, and Disk Usage](#Memory-CPU-and-Disk-Usage)
   
 _______
 
@@ -262,7 +264,7 @@ The `/histlocations/` endpoint needs to gather data from multiple time series to
 
 ### Frontend
 
-The frontend uses [OpenLayers](https://openlayers.org/), a JS library, to create a map and display the layers created by the previously described services. In prodduction, this is served using Nginx rather than Parcel's development mode.
+The frontend uses [OpenLayers](https://openlayers.org/), a JS library, to create a map and display the layers created by the previously described services. In production, this is served using Nginx rather than Parcel's development mode.
 
 The frontend also makes calls to a publicly available [API](https://carto.com/help/building-maps/basemap-list/) for basemap imagery.
 
@@ -295,9 +297,9 @@ where approx_event_time > now() - interval'5 minute';
  2021-05-14 05:06:28.974982+00 | 1646
 ```
 
-### CPU and Disk Usage
+### Memory, CPU, and Disk Usage
 
-In local testing, I found the most stressed part of the system wasn't CPU as I had originally suspected, but instead the disk. Upgrading from AWS standard `gp2` EBS to `gp3` EBS allowed me to get 3000 IOPs and 125MB/s throughput essentially for free (<$1.50/month for this project) and made hosting the PostgreSQL instance in a container viable.
+In local testing, I found the most stressed part of the system wasn't CPU as I had originally suspected, but instead the disk. See the capture below for the `docker stats` from 8:00am 5/14/2021.
 
 ```bash
 CONTAINER ID   NAME                     CPU %     MEM USAGE / LIMIT     MEM %     NET I/O
@@ -305,7 +307,10 @@ CONTAINER ID   NAME                     CPU %     MEM USAGE / LIMIT     MEM %   
 833aab4d39a8   redis_hackathon_redis_1  7.02%     862.7MiB / 3.786GiB   22.26%    58.8GB / 38.9GB
 ```
 
-Prior to upgrade, system load was very high due to the write-behind from gears. with the update, even during rush-hour (decoding/encoding messages -> CPU Heavy) and tile regeneration (Both Disk & CPU heavy), `%iowait` stays low and system load stays < 1. Consider the following results from `sar` during a tile regeneration event
+
+Upgrading from AWS standard `gp2` EBS to `gp3` EBS allowed me to get 3000 IOPs and 125MB/s throughput essentially for free and made hosting the PostgreSQL instance in a container viable. Without a robust disk, the site still functioned, however tile generation was quite slow and could lag 10+ minutes. As I'd like to expand this component to allow for 30m, 1h, 2h, 6h traffic layers, being able to get historical positions from disk quickly was crucial.
+
+Prior to upgrade, system load was very high due to the write-behind from gears (writing to disk) and tile generation (from disk). With the update, even during rush-hour (decoding/encoding messages -> CPU Heavy) and tile regeneration (Both Disk & CPU heavy), `%iowait` stays low and system load stays < 1. Consider the following results from `sar` during a tile regeneration event
 
 ```bash
                 CPU     %user   %system   %iowait   %idle  
@@ -321,6 +326,8 @@ Prior to upgrade, system load was very high due to the write-behind from gears. 
 # Back to High Idle % --
 20:01:47        all      7.19      4.39      5.89   81.24
 ```
+
+Due to the time series policy which sets TTL on entries for 1m in series A / 2h in series B and the Gears function constantly clearing the event stream, the Redis memory usage stays fairly constant around 800-900MB.
 
 ------
 
