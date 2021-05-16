@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>HSL Transit</title>
+    <script src="https://unpkg.com/elm-pep"></script>
+    <style>body { 
+        margin: 0;
+        padding: 0;
+        font-family: "Lato", sans-serif;
+      }
+    
+      hr {
+          height: 1px;
+          background-color: #ccc;
+          color: #d4e0e0;
+          border: 1px;
+          margin: 10px 20px 10px 20px; 
+      }
+
+      p, h2, h3, h4 {
+        color:  #d4e0e0;
+        padding: 6px 8px 6px 16px;
+      }
+
+      .map {
+        width: 80%;
+        height: 100%;
+      }
+
+      #map {
+        right: 0px;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+      }
+
+      /* Fixed sidenav, full height */
+      .sidenav {
+        height: 100%;
+        width: 20%;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: #111;
+        overflow-x: hidden;
+        padding-top: 20px;
+      }
+
+      /* Style the sidenav links and the dropdown button */
+      .sidenav a, .dropdown-btn {
+        padding: 6px 8px 6px 16px;
+        text-decoration: none;
+        font-size: 20px;
+        color: #d4e0e0;
+        display: block;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        outline: none;
+      }
+
+      /* On mouse-over */
+      .sidenav a:hover, .dropdown-btn:hover {
+        color: #d4e0e0;
+      }
+
+      /* Dropdown container (hidden by default). Optional: add a lighter background color and some left padding to change the design of the dropdown content */
+      .dropdown-container {
+        display: none;
+        background-color: #262626;
+        padding-left: 8px;
+      }
+
+      /* Optional: Style the caret down icon */
+      .fa-caret-down {
+        float: right;
+        padding-right: 8px;
+      }
+
+      /* Some media queries for responsiveness */
+      @media screen and (max-height: 450px) {
+        .sidenav {padding-top: 15px;}
+        .sidenav a {font-size: 18px;}
+      }
+
+      table, td, th {  
+        border: 1px solid #0000;
+        text-align: left;
+        height: 4px;
+      }
+
+      table {
+        width: 100%;
+      }
+
+      tr {
+        height: 4px;
+      }
+
+      .ol-popup {
+        position: absolute;
+        background-color: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #cccccc;
+        bottom: 6px;
+        left: -50px;
+        min-width: 220px;
+      }
+
+      .ol-popup:after, .ol-popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .dropdown-container {
+        display: none;
+        background-color: #262626;
+        padding-left: 8px;
+      }
+
+      /* Add an active class to the active dropdown button */
+      .active {
+        background-color: #672044;
+        color: white;
+      }</style>
+  <link rel="stylesheet" href="/hslolfrontend.e31bb0bc.css"></head>
+  <body>
+
+    <div id="layerbar" class="sidenav">
+        <h2>Live Helsinki Regional Transport Tracking</h2>
+        <hr>
+        <h3>Layers</h3>
+        <a id="live-toggle">Live Layers</a>
+        <a id="areas-stats-toggle">Neighborhood Layers</a>
+        <button class="dropdown-btn">GTFS Layers</button>
+        <div class="dropdown-container">
+            <a id="stops-toggle" class="layer-toggle">Stops</a>
+            <a id="routes-toggle" class="layer-toggle">Routes</a>
+        </div>
+        <hr>
+        <h3>Instructions</h3>
+        <p>The buttons above control the layers displayed on the map. You can hover over any layer feature for more detail</p>
+        
+        <h4>Live</h4> 
+          <p>The live layer displays the current position of any bus, train, or tram in the HSL metro area. 
+            Clicking on a vehicle in this layer will render the past 2 hours of the vehicle's position and 
+            speed history.
+        </p>
+
+        <h4>Neighborhood</h4>
+        <p>The neighborhood layer divides the metro area into neighborhoods and renders them 
+          as shapes on the map, the coloring of the map represents the average speed of 
+          vehicles in area in the previous 60 minutes.
+        </p>
+        
+        <h4>GTFS</h4> 
+        <p>The GTFS layer displays the reported stop locations and routes in the metro system.</p>
+        
+    </div>
+
+    <div id="map" class="map"></div>
+
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
+    </div>
+
+
+    <script src="/hslolfrontend.e31bb0bc.js"></script>
+
+    <script>/* Loop through all dropdown buttons to toggle between hiding and showing its dropdown content - This allows the user to have multiple dropdowns without any conflict */
+var dropdown = document.getElementsByClassName("dropdown-btn");
+var i;
+
+for (i = 0; i < dropdown.length; i++) {
+  dropdown[i].addEventListener("click", function () {
+    this.classList.toggle("active");
+    var dropdownContent = this.nextElementSibling;
+
+    if (dropdownContent.style.display === "block") {
+      dropdownContent.style.display = "none";
+    } else {
+      dropdownContent.style.display = "block";
+    }
+  });
+}</script>
+
+  </body>
+</html>

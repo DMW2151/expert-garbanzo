@@ -91,7 +91,7 @@ The remainder of this document will go through the application in a bit more det
 
 ## Local Build - Startup Notes
 
-A functional version of the system can be spun up locally with `docker-compose`. This will spin up (almost) all services required to run a local demo in their own isolated environments.
+A functional version of the system can be spun up locally with `docker-compose`. This will spin up (almost) all services required to run a local demo in their own isolated environments. The service will be running on http://localhost:8080/.
 
 ```bash
 docker-compose up --build
