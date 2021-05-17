@@ -61,7 +61,7 @@ services:
     ports: 
         - "8080:1234"
     volumes:
-      - ./compiledjs:/hslolfrontend/dist
+      - ./frontend/dist/:/hslolfrontend/dist
     env_file: 
       - './envs/hslweb.env'
     restart:

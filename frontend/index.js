@@ -20,6 +20,8 @@ import {ScaleLine, defaults as defaultControls} from 'ol/control';
 var colorArray = ['#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d']
 var api_host = process.env.API_HOST;
 
+var objSource_ = 1
+
 // Mappings; map the raw labels to labels and statistics 
 // representation functions for bus popup 
 var statisticsmappings = {
@@ -114,7 +116,6 @@ var histmappings = {
     "func": function(s) { return (s * 3600 / 1000) }
   }
 }
-
 
 // Static Background Layer - Stops, Sourced from static GTFS feed data
 var customStyleFunction = function(feature) {
@@ -310,7 +311,7 @@ function eventMsgHandler(event) {
     loc.setId([obj.VP.route, obj.VP.veh].join("/"))
     loc.setProperties(obj)
 
-    objSource.addFeature(loc) 
+    objSource.addFeature(loc)
 }
 
 // Using the sockets to source data onto the map gets expensive w. certain
@@ -487,3 +488,20 @@ map.on('click', function(event) {
 
     });
 });
+
+
+function tick() {  
+  var dtlocal = new Date()
+  var dttm = dtlocal.toLocaleString('en-US', { timeZone: 'Europe/Bucharest' })
+
+  var tm = dttm.split(' ')[1]
+  
+  if ((dtlocal.getUTCHours() < 4) || (dtlocal.getHours() > 19)) {
+    document.getElementById('datetime').innerHTML = `️️Helsinki (${tm}) 🌙 &mdash; there are ${objSource.getFeatures().length} HSL vehicles on the road.`;
+  } else {
+    document.getElementById('datetime').innerHTML = `️️Helsinki (${tm}) ☀️ &mdash; there are ${objSource.getFeatures().length} HSL vehicles on the road.`;
+  }
+
+  setTimeout(tick, 5000)
+}
+tick()
