@@ -4,7 +4,7 @@ This project publishes realtime locations of municipal transport vehicles in the
 
 This is an awesome service that Helsinki provides. Given that HSL publishes on the order of ~50 million updates per day, I felt that Redis would be a great tool to use given the robustness of the TimeSeries Module to quickly aggregate tens of thousands of datapoints, and the Redis Gears module's ability to run batch jobs off the main thread.
 
-A live version of this project is running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
+A live version of this project ~~is~~ was running online at [https://maphub.dev/helsinki](https://maphub.dev/helsinki)
 
 ![Screenshot of Live Map - Downtown Helsinki](https://raw.githubusercontent.com/DMW2151/expert-garbanzo/master/docs/live_.png "live")
 
