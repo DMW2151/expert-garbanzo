@@ -22,83 +22,12 @@ var (
 	nWorkers    = 10 // Set Variable for System CPU cap...
 )
 
-// statJourneyID checks if a journeyID already exists in the set of previously
-// seen JourneyID; attempts to SADD. Returns True if journey exists....
-func statJourneyID(client *redis.Client, key string, journeyID string) bool {
-
-	resp, err := client.Do(
-		ctx, "SADD", key, journeyID,
-	).Result()
-
-	if err != nil {
-		return false
-	}
-
-	// If resp == 0; then already exists...
-	return resp.(int64) == 0
-}
-
-// createTimeSeriesPair - create a timeseries of events and maps it to
-// auto-update a secondary time series with a compaction rule...
-//
-// WARNING: by default this setup ONLY allows for mapping 1:1 src to target
-// event timeseries, should consider using something better to customize rules
-func createTimeSeriesPair(client *redis.Client, journeyID string, label string) {
-
-	// Initialize Creation Pipeline For a Statistic
-	pipe := client.TxPipeline()
-
-	// Create Parent && Child Series
-	pipe.Do(
-		ctx, "TS.CREATE", fmt.Sprintf("positions:%s:%s", journeyID, label),
-	)
-
-	pipe.Do(
-		ctx, "TS.CREATE", fmt.Sprintf("positions:%s:%s:agg", journeyID, label),
-		"RETENTION", 120*60*1000, "LABELS", label, 1, "journey", journeyID,
-	)
-
-	_, err := pipe.Exec(ctx)
-
-	if err != nil {
-		log.WithFields(
-			log.Fields{
-				"JourneyID":   journeyID,
-				"Series":      fmt.Sprintf("positions:%s:%s", journeyID, label),
-				"ChildSeries": fmt.Sprintf("positions:%s:%s:agg", journeyID, label),
-			},
-		).Warn("Create TimeSeries Root Series Failed: ", err)
-	}
-
-	// Using a second pipe, create a rule, split into 2 stages to ensure parent && child
-	// series exist first....
-	pipe.Do(
-		ctx, "TS.CREATERULE",
-		fmt.Sprintf("positions:%s:%s", journeyID, label),
-		fmt.Sprintf("positions:%s:%s:agg", journeyID, label),
-		"AGGREGATION", "LAST", 15000,
-	)
-
-	_, err = pipe.Exec(ctx)
-
-	if err != nil {
-		log.WithFields(
-			log.Fields{
-				"JourneyID":   journeyID,
-				"Series":      fmt.Sprintf("positions:%s:%s", journeyID, label),
-				"ChildSeries": fmt.Sprintf("positions:%s:%s:agg", journeyID, label),
-			},
-		).Warn("Create TimeSeries Pair Failed: ", err)
-	}
-}
-
 // Launch some workers here...
 func writeRedis(ctx context.Context, C <-chan []byte, client *redis.Client) {
 
 	for msg := range C {
 
-		// Receive the content of the MQTT message and de-serialize bytes into
-		// struct
+		// Receive the content of the MQTT message and de-serialize bytes
 		e := &hsl.EventHolder{}
 		err := hsl.DeserializeMQTTBody(msg, e)
 
@@ -120,75 +49,17 @@ func writeRedis(ctx context.Context, C <-chan []byte, client *redis.Client) {
 			continue
 		}
 
-		// Main procedure for adding a series keys, values to the redis
-		// instance
-		// MEMOIZE!!
+		// Write The incoming event
 		journeyID := e.VP.GetEventHash()
-
-		// Check if JourneyID is known...
-		journeyExists := statJourneyID(client, "journeyID", journeyID)
-
-		// if not...then create the timeseries pair for the journey...
-		if !(journeyExists) {
-
-			log.WithFields(
-				log.Fields{
-					"JourneyID": journeyID,
-				},
-			).Info("New Journey Registered")
-
-			createTimeSeriesPair(client, journeyID, "speed")
-			createTimeSeriesPair(client, journeyID, "gh")
-		}
-
-		// Write The incoming event to multiple locations using
-		// a single client Tx pipeline, cuts back on some network
-		// round-trip
 		pipe := client.TxPipeline()
 
-		// 1. Publish full body...
-		pipe.Publish(
-			ctx, "currentLocationsPS", msg,
-		)
-
-		// 2. XADD the full event body to a stream of events, these
-		// are swept up by a gears function and written behind to a DB
-		// every XXXXms
-		pipe.XAdd(
-			ctx, &redis.XAddArgs{
-				Stream: "events",
-				Values: []interface{}{
-					"rt", e.VP.RouteID,
-					"jid", journeyID,
-					"lat", e.VP.Lat,
-					"lng", e.VP.Lng,
-					"time", e.VP.Timestamp,
-					"spd", e.VP.Spd,
-					"acc", e.VP.Acc,
-					"dl", e.VP.DeltaToSchedule,
-				},
-			},
-		)
-
-		// 3. TS.ADD a series of statistics to the timeseries created
-		// by `createTimeSeriesPair`
 		pipe.Do(
 			ctx,
-			"TS.ADD", fmt.Sprintf("positions:%s:speed", journeyID),
-			"*",
-			e.VP.Spd,
-			"RETENTION", 60*1000,
-			"CHUNK_SIZE", 16,
-			"ON_DUPLICATE", "LAST",
-		)
-
-		pipe.Do(
-			ctx,
-			"TS.ADD", fmt.Sprintf("positions:%s:gh", journeyID),
-			"*",
+			"SET",
+			fmt.Sprintf("positions:%s:%d", e.VP.RouteID, e.VP.VehID),
 			geohash.EncodeIntWithPrecision(e.VP.Lat, e.VP.Lng, 64),
-			"RETENTION", 60*1000,
-			"ON_DUPLICATE", "LAST",
+			"EX",
+			"600",
 		)
 
 		// Execute Pipe!
